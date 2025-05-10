@@ -142,20 +142,34 @@ const goToSelectedPlace = () => {
       
       // 只添加选中地点的标记
       if (AMapInstance) {
+        // 使用自定义内容标记，提高在移动设备上的可见性
         const marker = new AMapInstance.Marker({
           position: position,
-          label: {
-            content: selectedPlace.value.name,
-            direction: 'top'
-          },
-          icon: new AMapInstance.Icon({
-            size: new AMapInstance.Size(25, 34),
-            imageSize: new AMapInstance.Size(25, 34),
-            image: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png'
-          })
+          anchor: 'bottom-center',
+          content: `<div class="selected-marker">${selectedPlace.value.name}</div>`
         });
         
         map.value.add(marker);
+        
+        // 添加自定义样式
+        const customStyle = document.createElement('style');
+        customStyle.textContent = `
+          .selected-marker {
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 4px;
+            padding: 4px 8px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            font-size: 12px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        `;
+        document.head.appendChild(customStyle);
       }
     }
     
@@ -417,18 +431,48 @@ const searchNearbyPlaces = async () => {
             const position = [place.location.split(',')[0], place.location.split(',')[1]];
             
             if (AMapInstance && position[0] && position[1]) {
+              // 修改标记点的样式，提高在移动设备上的可见性
               const marker = new AMapInstance.Marker({
                 position: position,
-                label: {
-                  content: `${index + 1}. ${place.name}`,
-                  direction: 'top'
-                }
+                offset: new AMapInstance.Pixel(0, 0),
+                anchor: 'bottom-center',
+                content: `<div class="custom-marker">${index + 1}</div>`
+              });
+              
+              // 添加点击事件
+              marker.on('click', () => {
+                map.value.setCenter(position);
+                map.value.setZoom(17);
+                
+                // 选中该地点
+                selectedPlaceIndex.value = index;
+                
+                // 打开转盘弹窗
+                showWheel.value = true;
               });
               
               map.value.add(marker);
             }
           }
         });
+        
+        // 添加自定义样式
+        const customStyle = document.createElement('style');
+        customStyle.textContent = `
+          .custom-marker {
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            line-height: 26px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            font-size: 12px;
+          }
+        `;
+        document.head.appendChild(customStyle);
       }
     } else {
       console.error('未找到周边地点');
@@ -463,7 +507,11 @@ onUnmounted(() => {
 .map-container {
   width: 100%;
   height: 100vh;
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   overflow: hidden;
   z-index: 1;
 }
@@ -683,5 +731,25 @@ onUnmounted(() => {
   color: #999;
   font-style: italic;
   height: 100px;
+}
+
+/* 移动设备上的样式优化 */
+@media (max-width: 768px) {
+  .wheel-popup-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .wheel-popup-body {
+    padding: 15px 10px;
+  }
+  
+  .selected-place h3 {
+    font-size: 16px;
+  }
+  
+  .selected-place p {
+    font-size: 13px;
+  }
 }
 </style> 
